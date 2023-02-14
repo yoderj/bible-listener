@@ -11,11 +11,6 @@
 # During the install, you have the option to run gcloud init. Do this, and select your Google cloud
 # project as part of doing this.
 
-# Manually upload the samples to a Google Cloud bucket.
-# It may be possible to avoid this by using a different option
-# in the online console which might show how to upload the .wav
-# as part of the API request.
-
 # Install the gcloud cli (follow Windows instructions
 # for powershell)
 # https://cloud.google.com/sdk/docs/install
@@ -48,7 +43,7 @@ BUCKET_NAME = 'bible-voice'
 
 LOCAL_DIR = 'recordings' # This is the standard name for the folder into which all data files, including recordings,
                          # are placed.
-BASE = None  # eg. jhn3_16
+BASE = None  # eg. jhn3_16-20230214022714gmt
 
 
 # When True, run the `gcloud auth login` system command,
@@ -63,6 +58,7 @@ def google_transcribe(base, local_dir=None,gcloud_login=True):
     """
     :param base: The name of the file without the .wav extension
     :param local_dir: If provided, upload the file from this local_dir. Default: None
+                      If not provided, assume that the file has already been uploaded.
     :param gcloud_login: If true, login through a popped-up web browser. (Can set to false
        after first call in an hour)
     """
@@ -103,23 +99,28 @@ def google_transcribe(base, local_dir=None,gcloud_login=True):
         print('Message:', response.text)
         raise Exception('Could not get access token. Message:' + response.text)
     if local_dir or local_dir == '':
-        print('Uploading audio')
-        with open(local_dir+'/'+audio_file,'rb') as file:
-            audio_data = file.read()
-        response = requests.post('https://storage.googleapis.com/upload/storage/v1/b/'+BUCKET_NAME+
-                                 '/o?uploadType=media&name='+audio_file,
-                                 headers={'Content-Type': 'audio/wav',
-                                          'Authorization': 'Bearer ' + service_access_token},
-                                 data=audio_data
-                                 )
-        if response.status_code == 200:
-            print('File successfully uploaded')
-        else:
-            print('Could not upload file.. Status code:', response.status_code)
-            print('Message:', response.text)
-            raise Exception('Could not upload file. Message:'+response.text)
+        upload_to_bucket(audio_file, local_dir, service_access_token)
     print('Requesting transcription')
     synchronous_recognize(audio_file, json_file, service_access_token)
+    delete_bucket_object(audio_file,service_access_token)
+
+
+def upload_to_bucket(audio_file, local_dir, service_access_token):
+    print('Uploading audio')
+    with open(local_dir + '/' + audio_file, 'rb') as file:
+        audio_data = file.read()
+    response = requests.post('https://storage.googleapis.com/upload/storage/v1/b/' + BUCKET_NAME +
+                             '/o?uploadType=media&name=' + audio_file,
+                             headers={'Content-Type': 'audio/wav',
+                                      'Authorization': 'Bearer ' + service_access_token},
+                             data=audio_data
+                             )
+    if response.status_code == 200:
+        print('File successfully uploaded')
+    else:
+        print('Could not upload file.. Status code:', response.status_code)
+        print('Message:', response.text)
+        raise Exception('Could not upload file. Message:' + response.text)
 
 
 def synchronous_recognize(audio_file, json_file, service_access_token):
@@ -159,6 +160,27 @@ def synchronous_recognize(audio_file, json_file, service_access_token):
     else:
         print('Could not get transcription. Status code:', response.status_code)
         print('Message:', response.text)
+
+
+def delete_bucket_object(audio_file, service_access_token):
+    """
+    Delete a file that was previously uploaded with upload_to_bucket()
+    :param audio_file: The name of the file to delete. This should NOT have a path, just the filename and extension
+    :param service_access_token: See google_transcribe for how to get this token.
+    """
+    print('Deleting '+audio_file+ ' from Google Cloud')
+    print('https://storage.googleapis.com/upload/storage/v1/b/' + BUCKET_NAME +
+                             '/o/'+audio_file)
+    response = requests.delete('https://storage.googleapis.com/storage/v1/b/' + BUCKET_NAME +
+                             '/o/'+audio_file,
+                             headers={'Authorization': 'Bearer ' + service_access_token},
+                             )
+    if response.status_code == 204:
+        print('File successfully deleted')
+    else:
+        print('Could not delete file.. Status code:', response.status_code)
+        print('Message:', response.text)
+        raise Exception('Could not delete file. Message:' + response.text)
 
 
 if __name__ == '__main__':

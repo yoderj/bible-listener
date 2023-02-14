@@ -1,7 +1,7 @@
 # npm install -g npm@9.4.0
 # npm i bootstrap@5.3.0-alpha1
 # npm install -g npm@9.4.0
-
+import os
 import threading
 from flask import Flask
 import record_audio
@@ -23,21 +23,9 @@ with open('recordings/skip_text2.txt') as file:
 BLANK_TEXT = ''
 
 NAMES_FILE = 'recordings/names.txt'
+global NAMES
+USER_ID = '0'
 
-
-def read_names():
-    names = {}
-    with open(NAMES_FILE) as file:
-        for line in file.read().split('\n'):
-            if line:
-                id, name = line.split('\t')
-                names[id] = name
-    return names
-
-
-NAMES = read_names()
-
-USER_ID = '2'
 
 with open('recordings/reference.txt') as file:
     REFERENCE = file.read()
@@ -50,7 +38,25 @@ DEBUG = False
 GCLOUD_LOGIN = False
 
 
+def read_names():
+    global NAMES
+    names = {}
+    with open(NAMES_FILE) as file:
+        for line in file.read().split('\n'):
+            if line:
+                id, name = line.split('\t')
+                names[id] = name
+    return names
+
+
 def get_name(id):
+    global NAMES
+    try:
+        NAMES
+    except:
+        NAMES = ''
+    if not NAMES:
+        NAMES = read_names()
     return NAMES[id]
 
 
@@ -381,6 +387,10 @@ def inner_record():
         transcription = compare_text.normalize_punctuation(transcription)
         reference_text = compare_text.normalize_punctuation(reference_text)
         print(compare_text.show_diff(transcription.split(), reference_text.split()))
+
+        print('Deleting files')
+        os.remove(compare_text.TRANSCRIPTION_FILE)
+        os.remove(compare_text.PATH + compare_text.BASE + '.wav')
 
         marked_transcription, marked_scripture = compare_text.html_diff(transcription.split(), reference_text.split())
         with data_lock:

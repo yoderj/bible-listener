@@ -1,3 +1,4 @@
+import os
 import re
 import unicodedata
 import difflib
@@ -92,7 +93,10 @@ def extract_transcript_from_json():
 
 # Other users
 
+
 BASE = None  # This base is the full recording name without the final .wav or .json extension.
+                                      # e.g., 5-jhn3_16-20230214022714gmt
+
 
 if __name__ == '__main__':
 # def f():
@@ -110,7 +114,6 @@ if __name__ == '__main__':
     transcription = normalize_punctuation(transcription)
     reference_text = normalize_punctuation(reference_text)
     print(show_diff(transcription.split(), reference_text.split()))
-
 
 # https://stackoverflow.com/a/7268456/1048186
 pass
