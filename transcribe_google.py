@@ -105,6 +105,12 @@ import requests
 import json
 import compare_text
 
+import sys
+import logging
+logging.basicConfig(filename='log.txt',level=logging.DEBUG)
+print('Redirecting stdout and stderr to log file.')
+sys.stdout = open('log.txt','a')
+sys.stderr = sys.stdout
 
 with open('recordings/service_account.txt') as file:
     # The service_account_name is the name you give it.
