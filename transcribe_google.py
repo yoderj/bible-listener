@@ -1,28 +1,102 @@
-# Create a service account.
-# It was necessary (after the first attempted failed) to
-# follow a link within the failure message to enable text-to-speech
-# for the project. This could likely also be done before the first failure.
-
-# It was necessary to give my gmail account the role "Service Account Token Creator"
-# through the IAM console. This allows my account to create tokens
-# for the service account.
-# Details: https://stackoverflow.com/a/60555486/1048186
+# Developer install from scratch:
 #
-# During the install, you have the option to run gcloud init. Do this, and select your Google cloud
-# project as part of doing this.
-
-# Install the gcloud cli (follow Windows instructions
-# for powershell)
-# https://cloud.google.com/sdk/docs/install
+# * Install Notepad++
+# * Install Git for Windows from https://git-scm.com
+# * Install latest Python. (Will probably work with Python 3.10 or 3.11. Works with Python 3.9.13
+#   * Run as adminstrator. Have it add Python to path. Preferably set install location
+#     to C:\Program Files\Python39, 310, 311, etc.
 #
-# Don't install Python during this install. Then the system Python will be used.
-# But I find it necessary to set the CLOUDSDK_PYTHON
-# environment variable to point at the system Python as done
-# below.
-
-# https://stackoverflow.com/a/54836800/1048186
-# pip install --upgrade google-cloud-texttospeech
-# pip install --upgrade google-cloud-storage
+# Set up your Google cloud account.
+# 
+# * Create a Google cloud project using your primary Google (gmail) account.
+# * Create a billable account. (credit card needed.)
+#   * Google provides a good amount of free text transcription and cloud bucket storage,
+#     so, for light usage, you will not be billed anything.
+# * Create a service account.
+# * Give your gmail account the role "Service Account Token Creator"
+#   through the IAM console. This allows my account to create tokens
+#   for the service account.
+#   Details: https://stackoverflow.com/a/60555486/1048186
+# * Create an s3 bucket.  BUCKET_NAME holds the name of this bucket. This will
+#   temporarily hold recordings during transcription.
+# * Enable text-to-speech for the project.
+#   (It was necessary (after the first attempted failed) to
+#    follow a link within the failure message to enable text-to-speech
+#    for the project. This could likely also be done before the first failure.)
+#
+# * Use the Windows Powershell option to install Google Cloud. Install the bundled Python, the default.
+#   https://cloud.google.com/sdk/docs/install
+#
+#   During the install, you have the option to run gcloud init. Do this, and select your Google cloud
+#   project as part of doing this.
+#
+# Open cmd as an administrator.  Install this project's dependencies:
+# "C:\Program Files\Python39\python.exe" -m pip install --upgrade pip
+# pip install flask
+# pip install requests
+# pip install pyaudio
+# 
+# The current versions of these libraries are saved by pipreqs to requirements.txt:
+# Flask==2.2.2      # Simple web-server that runs on localhost
+# PyAudio==0.2.13   # Audio recording
+# requests==2.28.2  # To make HTTP requests to Google cloud
+#
+# Create a recordings.txt sub-directory, and add these files to it:
+# service_account.txt -- account@project-1234.iam.gserviceaccount.com
+#  account -- your service account's name
+#  project-1234 -- your Google cloud project's name
+#  There should NOT be a newline at the end of this file.
+# names.txt -- This is a tab-delimited file with two columns.
+#  id -- a decimal int holding your user id.  Please ask Josiah Yoder for a unique ID if you choose 
+#        not to simply act as "guest."
+#  name -- Your name.  Simply your first name, currently.
+#
+#  The verse is currently hard-coded  
+#  reference.txt -- the coded reference for the verse. This project uses one of three standard formats for references:
+#   Coded Reference   --- Pretty reference
+#   bookCH_VS         --- Book CH:VS
+#   bookCH_VS1-VS2    --- Book CH:VS1-VS2
+#   bookCH1_VS1-CH2_VS2 --- Book CH1:VS1 - CH2:VS2
+#  where, for the coded reference:
+#   book -- the three-letter code used by Blue-Letter Bible. Google "blb book" and look at the URL to find this.
+#   CH -- the decimal chapter number
+#   VS -- the decimal verse number.
+#
+#  For example, the coded reference jhn3_16 stands for John 3:16, and jhn1_1-21_25 stands for the entire book of John from the first verse (John 1:1)
+#  to the last one (John 21:25)
+#
+#  Ranges are inclusive of both ends.  1co1:12-13 includes exactly two verses.
+#
+#  This file MUST NOT have a newline at the end of it.
+#
+# pretty_reference.txt -- The "pretty reference" is the standard text format for a reference.
+#   This reference is included before and after the verse and I plan to eventually treat it specially
+#   when doing comparisons.  For example John 1:1 - 21:25 is the pretty reference for the whole book of John.
+#   This file MAY NOT have any newline at the end of it.
+#
+# 0-jhn3_16-niv1984.txt -- The reference text.  Eventually, all of the verse related files will
+#  be derived from this one and the current reference.
+#  This is the file holding the standard Biblical text for a verse.
+#  It starts with the pretty reference, followed by a space, followed by the text itself, followed by another space and the pretty reference.
+#  The format of the filename is:
+#    id-reference-version.txt
+#  where
+#    id -- the user's id in decimal.
+#    reference -- the coded reference as described above
+#    version -- niv1984. This is the only version supported so far.
+# I follow biblememory.com in allowing users to maintain their own verses in a variety of versions.
+# Then minor edits to punctuation or even wording can be made if desired to blend various versions.
+# This file MAY have newlines anywhere a space would occur in it.
+#
+# main_text.txt -- an exact copy of 0-jhn3_16-niv1984.txt
+# skip_text1.txt -- The main text, but with every other word replaced with underscores.
+#   I hope to auto-generate this soon, but I want to handle references properly first as they
+#   will be treated specially when creating this file.
+# skip_text2.txt
+#   Identical to skip_text1.txt, but with the other verses blanked out.
+# The skip_texts are used ONLY for display right now.  Eventually, I would like to record what prompts
+#   were displayed while recording a verse.  But I would like to figure out a uniform way of doing this that is flexible
+#   to the many forms of practice that meditators may use.
 
 import os
 import subprocess
@@ -31,7 +105,6 @@ import requests
 import json
 import compare_text
 
-os.environ['CLOUDSDK_PYTHON'] = 'python'
 
 with open('recordings/service_account.txt') as file:
     # The service_account_name is the name you give it.
