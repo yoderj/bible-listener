@@ -32,7 +32,7 @@ with open('recordings/reference.txt') as file:
 with open('recordings/pretty_reference.txt') as file:
     PRETTY_REFERENCE = file.read()
 DEBUG = False
-
+DELETE_RECORDINGS = True
 
 # TODO: Automate?
 GCLOUD_LOGIN = False
@@ -112,7 +112,7 @@ FOOTER = """
 POOL_TIME = 5  # Seconds
 
 # variables that are accessible from anywhere
-shared_thread_data = {'comparison':('','')}
+shared_thread_data = {'comparison':('',''),'deleted':False}
 # lock to control access to variable
 data_lock = threading.Lock()
 recording_thread = None
@@ -301,18 +301,24 @@ def get_comparison():
     with data_lock:
         global shared_thread_data
         comparison = shared_thread_data['comparison']
-    return comparison
+        deleted = shared_thread_data['deleted']
+    return comparison, deleted
 
 
-def create_diff_text(results):
+def create_diff_text(results, deleted):
     marked_transcription, marked_scripture = results
-    return """<p class="lead mb-4">Your transcription:</p>
+    if deleted:
+        deleted_text = "<p>The recording was deleted</p>"
+    else:
+        deleted_text = "<p>The recording was <b>not</b> deleted</p>"
+    return ("""<p class="lead mb-4">Your transcription:</p>
       <p class="lead mb-4"><b>""" + marked_transcription + """</b></p>
       <p class="lead mb-4">Scripture:</p>
       <p class="lead mb-4"><b>""" + marked_scripture + """</b></p>"""
+      + deleted_text)
 
 
-def create_reflect_text(comparison, meditate_button, record_button, record_name="Record"):
+def create_reflect_text(comparison, deleted, meditate_button, record_button, record_name="Record"):
     return ("""
     <div class="px-4 py-5 my-5 text-center">
     <!--img class="d-block mx-auto mb-4" src="/docs/5.3/assets/brand/bootstrap-logo.svg" alt="" width="72" height="57"-->
@@ -320,35 +326,35 @@ def create_reflect_text(comparison, meditate_button, record_button, record_name=
     <div class="col-lg-6 mx-auto">
       <p class="lead mb-4"><b>Time to reflect!</b>.  Here is a transcription of what you said and the verse you are
       memorizing:</p>"""+
-    create_diff_text(comparison) + create_buttons(meditate_button, record_button, record_name=record_name)+'</div></div>')
+    create_diff_text(comparison, deleted) + create_buttons(meditate_button, record_button, record_name=record_name)+'</div></div>')
 
 
 @app.route("/reflect")
 def reflect():
-    comparison = get_comparison()
-    return create_header() + create_reflect_text(comparison,"meditate","skip", record_name="Skip words") + FOOTER
+    comparison, deleted = get_comparison()
+    return create_header() + create_reflect_text(comparison, deleted, "meditate","skip", record_name="Skip words") + FOOTER
 
 
 @app.route("/skip_reflect")
 def skip_reflect():
-    comparison = get_comparison()
-    return create_header() + create_reflect_text(comparison,"meditate","skip2", record_name="Skip different words") + FOOTER
+    comparison, deleted = get_comparison()
+    return create_header() + create_reflect_text(comparison, deleted, "meditate","skip2", record_name="Skip different words") + FOOTER
 
 
 @app.route("/skip2_reflect")
 def skip2_reflect():
-    comparison = get_comparison()
-    return create_header() + create_reflect_text(comparison,"meditate","blank", record_name="No prompt") + FOOTER
+    comparison, deleted = get_comparison()
+    return create_header() + create_reflect_text(comparison, deleted, "meditate","blank", record_name="No prompt") + FOOTER
 
 
-def create_congratulations_text(results):
+def create_congratulations_text(results,deleted):
     return ("""
     <div class="px-4 py-5 my-5 text-center">
     <!--img class="d-block mx-auto mb-4" src="/docs/5.3/assets/brand/bootstrap-logo.svg" alt="" width="72" height="57"-->
     <h1 class="display-5 fw-bold">"""+PRETTY_REFERENCE+"""</h1>
     <div class="col-lg-6 mx-auto">
       <p class="lead mb-4"><b>Recording complete.</b>. Here is a comparison of the transcription with the actual verse:</p>
-      """+create_diff_text(results)
+      """+create_diff_text(results,deleted)
       +"""<p class="lead mb-4">Congratulations! You have meditated on this verse without prompts.  Now you can continue to meditate on it 
       throughout the day as much as you want!
       </div></div>""")
@@ -356,8 +362,8 @@ def create_congratulations_text(results):
 
 @app.route("/blank_reflect")
 def blank_reflect():
-    comparison = get_comparison()
-    return create_header() + create_congratulations_text(comparison) + FOOTER
+    comparison, deleted = get_comparison()
+    return create_header() + create_congratulations_text(comparison, deleted) + FOOTER
 
 
 def inner_record():
@@ -388,14 +394,20 @@ def inner_record():
         reference_text = compare_text.normalize_punctuation(reference_text)
         print(compare_text.show_diff(transcription.split(), reference_text.split()))
 
-        print('Deleting files')
-        os.remove(compare_text.TRANSCRIPTION_FILE)
-        os.remove(compare_text.PATH + compare_text.BASE + '.wav')
+        if DELETE_RECORDINGS:
+            print('Deleting files')
+            os.remove(compare_text.TRANSCRIPTION_FILE)
+            os.remove(compare_text.PATH + compare_text.BASE + '.wav')
+            deleted = True
+        else:
+            print('NOT deleting files')
+            deleted = False
 
         marked_transcription, marked_scripture = compare_text.html_diff(transcription.split(), reference_text.split())
         with data_lock:
             # shared_thread_data['comparison'] = compare_text.show_diff(transcription.split(), reference_text.split())
             shared_thread_data['comparison'] = marked_transcription,marked_scripture
+            shared_thread_data['deleted'] = deleted
 
 
 if __name__ == '__main__':
