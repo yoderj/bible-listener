@@ -13,14 +13,18 @@ def set_base(base):
     global DATE_LENGTH
     global SHORTER_BASE
     global REFERENCE_TEXT_FILE
-    global TRANSCRIPTION_FILE
+    global TRANSCRIPTION_JSON_FILE
+    global TRANSCRIPTION_TEXT_FILE
+    global AUDIO_FILE
     BASE = base
     DATE_LENGTH = 18 # Fixed by format
     assert BASE.rfind('-') == len(BASE)-DATE_LENGTH
     SHORTER_BASE = BASE[:-DATE_LENGTH]
     REFERENCE_TEXT_FILE = PATH+SHORTER_BASE+'-niv1984.txt'
-    TRANSCRIPTION_FILE = PATH+BASE+'.json'
-
+    AUDIO_FILE = PATH + BASE + '.wav'
+    TRANSCRIPTION_JSON_FILE = PATH + BASE + '.json'
+    assert BASE # BASE cannot be an empty string to not overwrite the Scripture text.
+    TRANSCRIPTION_TEXT_FILE = PATH + BASE + '.txt'
 
 def normalize_punctuation(transcription):
     s = ''.join(c if unicodedata.category(c)[0] not in 'CSP' else ' ' for c in transcription)
@@ -80,8 +84,8 @@ seqm is a difflib.SequenceMatcher instance whose a & b are strings"""
 
 
 def extract_transcript_from_json():
-    print('Compare text is working with '+TRANSCRIPTION_FILE)
-    with open(TRANSCRIPTION_FILE,
+    print('Compare text is working with ' + TRANSCRIPTION_JSON_FILE)
+    with open(TRANSCRIPTION_JSON_FILE,
               'r') as file:
         dictionary = json.load(file)
     transcript = ''
@@ -91,6 +95,13 @@ def extract_transcript_from_json():
                 transcript += alternative['transcript']
     return transcript
 
+
+def read_transcript_from_txt():
+    print('Compare text is working with ' + TRANSCRIPTION_TEXT_FILE)
+    with open(TRANSCRIPTION_TEXT_FILE,
+              'r') as file:
+        transcript = file.read()
+    return transcript
 # Other users
 
 

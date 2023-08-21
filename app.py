@@ -5,7 +5,7 @@ import os
 import threading
 from flask import Flask
 import record_audio
-import transcribe_google
+import transcribe_openai
 import compare_text
 
 # Use as sparingly as possible!
@@ -382,13 +382,13 @@ def inner_record():
         record_audio.record_to_file(path)
         print("done - result written to", path)
 
-        transcribe_google.google_transcribe(base, local_dir=record_audio.RECORDINGS_PREFIX, gcloud_login=GCLOUD_LOGIN)
         compare_text.set_base(base)  # TODO: Convert module to object?
+        transcribe_openai.openai_transcribe()
 
-        with open(compare_text.REFERENCE_TEXT_FILE, 'r') as file:
+        with open(compare_text.REFERENCE_TEXT_FILE, 'r', encoding='utf-8') as file:
             reference_text = file.read()
 
-        transcription = compare_text.extract_transcript_from_json()
+        transcription = compare_text.read_transcript_from_txt()
 
         transcription = compare_text.normalize_punctuation(transcription)
         reference_text = compare_text.normalize_punctuation(reference_text)
@@ -396,7 +396,7 @@ def inner_record():
 
         if DELETE_RECORDINGS:
             print('Deleting files')
-            os.remove(compare_text.TRANSCRIPTION_FILE)
+            os.remove(compare_text.TRANSCRIPTION_TEXT_FILE)
             os.remove(compare_text.PATH + compare_text.BASE + '.wav')
             deleted = True
         else:
