@@ -113,14 +113,15 @@ if __name__ == '__main__':
 # def f():
     set_base(BASE)
 
-    extract_transcript_from_json()
+    # extract_transcript_from_json()
 
     with open(REFERENCE_TEXT_FILE, 'r') as file:
         reference_text = file.read()
 
     # with open(PLAINTEXT_TRANSCRIPTION_FILE, 'r') as file:
     #     transcription = file.read()
-    transcription = extract_transcript_from_json()
+    # transcription = extract_transcript_from_json()
+    transcription = read_transcript_from_txt()
 
     transcription = normalize_punctuation(transcription)
     reference_text = normalize_punctuation(reference_text)

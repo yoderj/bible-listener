@@ -6,7 +6,7 @@ import pyaudio
 import wave
 import datetime
 
-import transcribe_google
+import transcribe_openai
 import compare_text
 
 RECORDINGS_PREFIX = 'recordings/'
@@ -188,10 +188,10 @@ if __name__ == '__main__':
     print("done - result written to",path)
 
     # Can set gcloud_login=False after first run of the day.
-    transcribe_google.google_transcribe(base, local_dir=RECORDINGS_PREFIX, gcloud_login=GCLOUD_LOGIN)
     compare_text.set_base(base)  # TODO: Convert module to object.
+    transcribe_openai.openai_transcribe()
 
-    with open(compare_text.REFERENCE_TEXT_FILE, 'r') as fFile:
+    with open(compare_text.REFERENCE_TEXT_FILE, 'r') as file:
         reference_text = file.read()
 
     transcription = compare_text.extract_transcript_from_json()
