@@ -168,7 +168,7 @@ def create_recording_filename(reference, user_id):
     return base, filename, path
 
 
-BASE = None
+BASE = 'phl1_1-4_23' # BASE = None
 # GCLOUD_LOGIN = True
 GCLOUD_LOGIN = False
 
@@ -194,7 +194,8 @@ if __name__ == '__main__':
     with open(compare_text.REFERENCE_TEXT_FILE, 'r') as file:
         reference_text = file.read()
 
-    transcription = compare_text.extract_transcript_from_json()
+    # transcription = compare_text.extract_transcript_from_json()
+    transcription = compare_text.read_transcript_from_txt()
 
     transcription = compare_text.normalize_punctuation(transcription)
     reference_text = compare_text.normalize_punctuation(reference_text)

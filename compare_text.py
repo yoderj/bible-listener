@@ -4,6 +4,8 @@ import unicodedata
 import difflib
 import json
 
+VERSION_CODE = 'niv1984'
+# VERSION_CODE = 'nasb'
 
 PATH = 'recordings/'
 
@@ -20,7 +22,7 @@ def set_base(base):
     DATE_LENGTH = 18 # Fixed by format
     assert BASE.rfind('-') == len(BASE)-DATE_LENGTH
     SHORTER_BASE = BASE[:-DATE_LENGTH]
-    REFERENCE_TEXT_FILE = PATH+SHORTER_BASE+'-niv1984.txt'
+    REFERENCE_TEXT_FILE = PATH + SHORTER_BASE + '-' + VERSION_CODE + '.txt'
     AUDIO_FILE = PATH + BASE + '.wav'
     TRANSCRIPTION_JSON_FILE = PATH + BASE + '.json'
     assert BASE # BASE cannot be an empty string to not overwrite the Scripture text.

@@ -1,6 +1,6 @@
 # pip install openai-whisper # Just for reference, see: https://github.com/openai/whisper
 # Download scoop from: https://github.com/ScoopInstaller/Scoop
-# scoop install ffmpeg
+# scoop install ffmpeg # Have to restart PyCharm after installing this. pip install ffmpeg-python MIGHT also work.
 # # download amount: 461M # "small" model 2GB "VRAM." This model worked on my MSOE laptop.
 #
 
@@ -9,10 +9,12 @@ import compare_text
 
 import sys
 import logging
-logging.basicConfig(filename='log.txt',level=logging.DEBUG)
-print('Redirecting stdout and stderr to log file.')
-sys.stdout = open('log.txt','a')
-sys.stderr = sys.stdout
+
+def log_silently():
+    logging.basicConfig(filename='log.txt',level=logging.DEBUG)
+    print('Redirecting stdout and stderr to log file.')
+    sys.stdout = open('log.txt','a')
+    sys.stderr = sys.stdout
 
 
 LOCAL_DIR = 'recordings'

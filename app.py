@@ -8,6 +8,11 @@ import record_audio
 import transcribe_openai
 import compare_text
 
+SILENT = True
+
+if SILENT:
+    transcribe_openai.log_silently()
+
 # Use as sparingly as possible!
 DOMAIN = 'localhost:5000'
 
@@ -31,8 +36,8 @@ with open('recordings/reference.txt') as file:
     REFERENCE = file.read()
 with open('recordings/pretty_reference.txt') as file:
     PRETTY_REFERENCE = file.read()
-DEBUG = False
-DELETE_RECORDINGS = True
+DEBUG = True
+DELETE_RECORDINGS = False
 
 # TODO: Automate?
 GCLOUD_LOGIN = False
